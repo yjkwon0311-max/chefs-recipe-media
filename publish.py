@@ -33,6 +33,9 @@ YT_SENT = ROOT / "yt_sent.json"
 IG_SENT = ROOT / "ig_sent.json"
 
 DRY = os.environ.get("DRY_RUN", "").strip() in ("1", "true", "yes")
+# 인스타 발행 스위치. 기본 꺼짐(유튜브만). 다시 켜려면 IG_ENABLED=1.
+# 2026-10-12 대표님 지시로 인스타 발행 중단. 토큰 코드190 사망 + 당분간 인스타 안 올림.
+IG_ENABLED = os.environ.get("IG_ENABLED", "").strip() in ("1", "true", "yes")
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 UPLOAD_URL = ("https://www.googleapis.com/upload/youtube/v3/videos"
@@ -287,7 +290,8 @@ def due_items(posts, yt_sent, ig_sent, now):
         cid, at = p.get("content_id"), p.get("at")
         if not cid or not at:
             continue
-        if cid in yt_sent and cid in ig_sent:
+        done = cid in yt_sent and (cid in ig_sent or not IG_ENABLED)
+        if done:
             continue
         try:
             at_dt = datetime.strptime(at, "%Y-%m-%dT%H:%M:%S")
@@ -316,11 +320,14 @@ def main():
             log("  [유튜브] 토큰 OK")
         except SystemExit as e:
             log("  [유튜브] 토큰 실패: %s" % e)
-        try:
-            uid = ig_user_id(need_env("IG_ACCESS_TOKEN"))
-            log("  [인스타] 토큰 OK (user_id=%s)" % uid)
-        except Exception as e:
-            log("  [인스타] 토큰 실패: %s" % e)
+        if IG_ENABLED:
+            try:
+                uid = ig_user_id(need_env("IG_ACCESS_TOKEN"))
+                log("  [인스타] 토큰 OK (user_id=%s)" % uid)
+            except Exception as e:
+                log("  [인스타] 토큰 실패: %s" % e)
+        else:
+            log("  [인스타] 발행 중단됨 (IG_ENABLED 꺼짐)")
         log("[DRY_RUN] 종료.")
         return 0
 
@@ -329,7 +336,7 @@ def main():
         return 0
 
     yt_token = yt_access_token()
-    ig_token = need_env("IG_ACCESS_TOKEN")
+    ig_token = need_env("IG_ACCESS_TOKEN") if IG_ENABLED else None
 
     changed = False
     for at_dt, cid, p in due:
@@ -350,7 +357,9 @@ def main():
                 log("  %s — 다음 실행에 재시도" % e)
         else:
             log("  [유튜브] 이미 발행됨")
-        if cid not in ig_sent:
+        if not IG_ENABLED:
+            pass  # 인스타 발행 중단 (대표님 지시 2026-10-12)
+        elif cid not in ig_sent:
             try:
                 ig_sent[cid] = ig_publish(cid, p, ig_token)
                 save_json(IG_SENT, ig_sent)
@@ -368,7 +377,7 @@ def main():
 
         # 유튜브+인스타 둘 다 발행 끝난 영상은 Pages에 둘 이유가 없다.
         # 저장소 용량을 줄이려고 발행 완료 즉시 reels/thumbs 를 지운다(발행 기록은 남는다).
-        if cid in yt_sent and cid in ig_sent:
+        if cid in yt_sent and (cid in ig_sent or not IG_ENABLED):
             for f in (ROOT / "reels" / ("%s.mp4" % cid),
                       ROOT / "thumbs" / ("%s.jpg" % cid)):
                 if f.exists():
