@@ -131,6 +131,11 @@ COUPANG_LINKS = {
     "참기름": "https://link.coupang.com/a/hSVW2JTveS",
     "다진마늘": "https://link.coupang.com/a/hSV21I5gk0",
     "설탕": "https://link.coupang.com/a/hSV4KgSIGu",
+    "굴소스": "https://link.coupang.com/a/hSWrYHcHsG",   # 이금기 팬더 굴소스
+    "맛술": "https://link.coupang.com/a/hSWy2jivDw",
+    "올리고당": "https://link.coupang.com/a/hSWAuFHcXY",
+    "들기름": "https://link.coupang.com/a/hSWBKHnkd2",
+    "된장": "https://link.coupang.com/a/hSWCZq3IRM",
 }
 COUPANG_MAX = 4  # 한 영상당 링크 상한(스팸·신뢰 하락 방지)
 COUPANG_DISCLOSURE = "※ 이 영상은 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다."
