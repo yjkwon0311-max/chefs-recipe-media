@@ -123,15 +123,23 @@ def _post_form(url, data):
 # ── 쿠팡 파트너스 제휴 (Phase 1 반자동) ────────────────────────────
 # 재료명 → 쿠팡 단축(딥)링크. 캡션에 그 재료가 있으면 설명란·핀댓글에 자동 삽입.
 # API 최종승인 전까지 수동 생성한 고정 링크를 쓴다. 승인 후 Open API로 전환(설계: 쿠팡제휴_설계.md).
+# 키는 캡션에 실제 나오는 재료 표기 기준(substring 매칭). 2026-10-16 생성, 전부 302 확인.
 COUPANG_LINKS = {
     "고추장": "https://link.coupang.com/a/hSVqWSF6ya",
+    "고춧가루": "https://link.coupang.com/a/hSVY9bJRTw",
+    "간장": "https://link.coupang.com/a/hSVUZHRiA8",   # 양조간장(국간장 캡션에도 매칭됨)
+    "참기름": "https://link.coupang.com/a/hSVW2JTveS",
+    "다진마늘": "https://link.coupang.com/a/hSV21I5gk0",
+    "설탕": "https://link.coupang.com/a/hSV4KgSIGu",
 }
+COUPANG_MAX = 4  # 한 영상당 링크 상한(스팸·신뢰 하락 방지)
 COUPANG_DISCLOSURE = "※ 이 영상은 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다."
 
 
 def affiliate_block(caption):
     """캡션에 등장하는 재료의 쿠팡 링크 블록. 매칭 없으면 '' (변화 없음)."""
-    hits = [(n, u) for n, u in COUPANG_LINKS.items() if n in (caption or "")]
+    cap = caption or ""
+    hits = [(n, u) for n, u in COUPANG_LINKS.items() if n in cap][:COUPANG_MAX]
     if not hits:
         return ""
     lines = ["", "🛒 오늘 재료 (쿠팡)"]
