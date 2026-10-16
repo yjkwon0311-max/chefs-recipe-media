@@ -120,9 +120,29 @@ def _post_form(url, data):
         return {"_error": "%s %s" % (e.code, e.read().decode("utf-8", "replace"))}
 
 
+# ── 쿠팡 파트너스 제휴 (Phase 1 반자동) ────────────────────────────
+# 재료명 → 쿠팡 단축(딥)링크. 캡션에 그 재료가 있으면 설명란·핀댓글에 자동 삽입.
+# API 최종승인 전까지 수동 생성한 고정 링크를 쓴다. 승인 후 Open API로 전환(설계: 쿠팡제휴_설계.md).
+COUPANG_LINKS = {
+    "고추장": "https://link.coupang.com/a/hSVqWSF6ya",
+}
+COUPANG_DISCLOSURE = "※ 이 영상은 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다."
+
+
+def affiliate_block(caption):
+    """캡션에 등장하는 재료의 쿠팡 링크 블록. 매칭 없으면 '' (변화 없음)."""
+    hits = [(n, u) for n, u in COUPANG_LINKS.items() if n in (caption or "")]
+    if not hits:
+        return ""
+    lines = ["", "🛒 오늘 재료 (쿠팡)"]
+    lines += ["· %s → %s" % (n, u) for n, u in hits]
+    lines.append(COUPANG_DISCLOSURE)
+    return "\n".join(lines)
+
+
 def yt_meta(p):
     title = p["title"][:99]
-    desc = (p.get("caption", "") + "\n\n#Shorts")[:4900]
+    desc = (p.get("caption", "") + affiliate_block(p.get("caption", "")) + "\n\n#Shorts")[:4900]
     tags = [w[1:] for w in p.get("caption", "").split() if w.startswith("#")][:15]
     return {
         "snippet": {"title": title, "description": desc, "tags": tags,
@@ -342,6 +362,12 @@ def main():
     for at_dt, cid, p in due:
         log("\n--- %s (%s)" % (cid, at_dt.strftime("%m-%d %H:%M")))
         msg = comment_text_for(cid)
+        # 쇼츠는 설명란보다 핀(첫) 댓글 노출이 커서, 제휴 블록을 첫 댓글에도 붙인다.
+        _aff = affiliate_block(p.get("caption", ""))
+        if msg and _aff:
+            msg = msg + "\n" + _aff
+        elif _aff:
+            msg = _aff.lstrip("\n")
         if cid not in yt_sent:
             try:
                 yt_sent[cid] = yt_upload(cid, p, yt_token)
