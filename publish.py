@@ -147,7 +147,7 @@ def affiliate_block(caption):
     hits = [(n, u) for n, u in COUPANG_LINKS.items() if n in cap][:COUPANG_MAX]
     if not hits:
         return ""
-    lines = ["", "🛒 오늘 재료 (쿠팡)"]
+    lines = ["", "👇 오늘 쓴 재료, 쿠팡에서 바로 확인하세요"]
     lines += ["· %s → %s" % (n, u) for n, u in hits]
     lines.append(COUPANG_DISCLOSURE)
     return "\n".join(lines)
